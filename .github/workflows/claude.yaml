@@ -22,17 +22,45 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Claude Code Integration
-        id: claude-assistant
-        uses: anthropics/claude-code-action@v1
+      - name: Get PR diff
+        id: get-diff
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            You are a senior Go engineer with 10+ years of experience reviewing production code.
+          script: |
+            const pr = context.payload.pull_request || context.payload.issue;
+            if (!pr) {
+              console.log('Not a PR comment, skipping');
+              return '';
+            }
             
-            REVIEW STANDARDS (see .github/CLAUDE_STANDARDS.md for full details):
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
             
+            let diff = '';
+            for (const file of files) {
+              diff += `\n### ${file.filename}\n\`\`\`diff\n${file.patch || 'Binary file'}\n\`\`\`\n`;
+            }
+            
+            core.setOutput('diff', diff);
+            core.setOutput('pr_number', pr.number);
+            return diff;
+
+      - name: Call Claude API
+        id: claude-assistant
+        uses: actions/github-script@v7
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          script: |
+            const userComment = context.payload.comment.body;
+            const diff = `${{ steps.get-diff.outputs.diff }}`;
+            
+            const systemPrompt = `You are a senior Go engineer with 10+ years of experience reviewing production code.
+            
+            REVIEW STANDARDS:
             🔴 CRITICAL (Must Fix):
             - Security vulnerabilities (SQL injection, XSS, hardcoded secrets)
             - Data races and concurrency issues
@@ -56,20 +84,60 @@ jobs:
             3. Prioritized list of issues
             4. Suggestions for improvements
             
-            Be constructive, educational, and specific. Reference Go best practices.
+            Be constructive, educational, and specific. Reference Go best practices.`;
+            
+            const userPrompt = `${userComment}\n\nCode changes:\n${diff}`;
+            
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01'
+              },
+              body: JSON.stringify({
+                model: 'claude-3-5-sonnet-20241022',
+                max_tokens: 4096,
+                system: systemPrompt,
+                messages: [
+                  {
+                    role: 'user',
+                    content: userPrompt
+                  }
+                ]
+              })
+            });
+            
+            if (!response.ok) {
+              const error = await response.text();
+              throw new Error(`Claude API error: ${response.status} - ${error}`);
+            }
+            
+            const data = await response.json();
+            const analysis = data.content[0].text;
+            
+            // Post Claude's analysis
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 Claude Code Review\n\n${analysis}`
+            });
+            
+            // Store token usage for cost calculation
+            core.setOutput('input_tokens', data.usage.input_tokens);
+            core.setOutput('output_tokens', data.usage.output_tokens);
+            
+            return analysis;
       
       - name: Post Cost Estimate
         if: steps.claude-assistant.outcome == 'success'
         uses: actions/github-script@v7
         with:
           script: |
-            // Estimate tokens based on comment length
-            const promptTokens = 600;  // Assistant prompt ~600 tokens
-            const codeTokens = 150;    // Focused review ~150 tokens
-            const responseTokens = 300; // Brief response ~300 tokens
-            
-            const inputTokens = promptTokens + codeTokens;
-            const outputTokens = responseTokens;
+            // Get actual token usage from Claude API
+            const inputTokens = parseInt('${{ steps.claude-assistant.outputs.input_tokens }}') || 750;
+            const outputTokens = parseInt('${{ steps.claude-assistant.outputs.output_tokens }}') || 300;
             
             // Claude 3.5 Sonnet pricing
             const inputCost = (inputTokens / 1000000) * 3;
