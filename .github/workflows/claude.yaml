@@ -28,5 +28,44 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
       
-      # Note: Claude Code Action handles everything automatically
-      # Check Anthropic Console for actual token usage and costs
+      - name: Post Cost Estimate
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Estimate based on typical usage
+            const estimatedInputTokens = 1000;  // PR context + prompt
+            const estimatedOutputTokens = 500;  // Claude's response
+            
+            // Claude 3.5 Sonnet pricing
+            const inputCost = (estimatedInputTokens / 1000000) * 3;
+            const outputCost = (estimatedOutputTokens / 1000000) * 15;
+            const totalCost = inputCost + outputCost;
+            
+            const comment = `## 💰 Estimated Cost
+            
+            **Status:** ${{ steps.claude-assistant.outcome || 'completed' }}
+            
+            ### Estimated Token Usage
+            - Input: ~${estimatedInputTokens.toLocaleString()} tokens
+            - Output: ~${estimatedOutputTokens.toLocaleString()} tokens
+            - **Total:** ~${(estimatedInputTokens + estimatedOutputTokens).toLocaleString()} tokens
+            
+            ### Cost Breakdown
+            - Input cost: ~$${inputCost.toFixed(4)}
+            - Output cost: ~$${outputCost.toFixed(4)}
+            - **Total cost:** ~$${totalCost.toFixed(4)} (~$${totalCost.toFixed(2)})
+            
+            ### Your Budget
+            - Estimated cost this interaction: ~$${totalCost.toFixed(2)}
+            - Remaining budget (from $5.00): ~$${(5 - totalCost).toFixed(2)}
+            
+            ---
+            *💡 Check exact usage at [Anthropic Console](https://console.anthropic.com/settings/usage)*`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
