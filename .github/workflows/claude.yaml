@@ -59,7 +59,7 @@ jobs:
             Be constructive, educational, and specific. Reference Go best practices.
       
       - name: Post Cost Estimate
-        if: always()
+        if: steps.claude-assistant.outcome == 'success'
         uses: actions/github-script@v7
         with:
           script: |
