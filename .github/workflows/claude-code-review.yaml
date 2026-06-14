@@ -38,3 +38,53 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are conducting a comprehensive code review as a senior Go architect.
+            
+            REVIEW CHECKLIST:
+            
+            🔒 SECURITY (CRITICAL):
+            - [ ] No hardcoded credentials, API keys, or secrets
+            - [ ] All user inputs validated and sanitized
+            - [ ] No SQL injection vulnerabilities
+            - [ ] Error messages don't leak sensitive information
+            - [ ] Proper authentication/authorization checks
+            
+            ✅ TESTING (HIGH):
+            - [ ] Unit tests for all new functions
+            - [ ] Test coverage >= 80%
+            - [ ] Error cases tested
+            - [ ] Edge conditions covered
+            - [ ] Table-driven tests used where appropriate
+            
+            ⚠️ ERROR HANDLING (HIGH):
+            - [ ] No ignored errors (_ = err)
+            - [ ] Errors wrapped with context (fmt.Errorf with %w)
+            - [ ] No panics in library code
+            - [ ] All error paths tested
+            
+            📚 DOCUMENTATION (REQUIRED):
+            - [ ] Godoc comments for all exported functions/types
+            - [ ] Complex logic explained
+            - [ ] Examples provided for non-trivial APIs
+            
+            ⚡ PERFORMANCE:
+            - [ ] No unnecessary allocations in hot paths
+            - [ ] Resources properly closed (defer used)
+            - [ ] No goroutine leaks
+            - [ ] Efficient algorithms used
+            
+            🏗️ CODE QUALITY:
+            - [ ] Functions < 50 lines
+            - [ ] Meaningful variable names
+            - [ ] No code duplication
+            - [ ] Single Responsibility Principle followed
+            
+            OUTPUT FORMAT:
+            1. **Verdict**: LGTM / Needs Work / Critical Issues
+            2. **Critical Issues** (🔴): List blocking issues
+            3. **High Priority** (🟡): List important improvements
+            4. **Suggestions** (🟢): List nice-to-have improvements
+            5. **Positive Feedback**: Highlight good practices
+            
+            Provide code examples for suggestions. Be educational and constructive.

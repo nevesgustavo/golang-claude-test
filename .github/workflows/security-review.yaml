@@ -1,0 +1,84 @@
+name: Security-Focused Review
+
+on:
+  pull_request:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  security-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Run Security Scanner (gosec)
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -fmt=json -out=gosec-report.json ./... || true
+
+      - name: Claude Security Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are a security expert reviewing Go code for vulnerabilities.
+            
+            SECURITY CHECKLIST:
+            
+            🔴 CRITICAL VULNERABILITIES:
+            - SQL Injection (use parameterized queries)
+            - Command Injection (validate inputs, avoid os.Exec with user input)
+            - Path Traversal (validate file paths)
+            - Hardcoded Secrets (API keys, passwords, tokens)
+            - Insecure Cryptography (weak algorithms, hardcoded keys)
+            - Authentication/Authorization bypass
+            
+            🟡 HIGH RISK:
+            - Sensitive data in logs or error messages
+            - Missing input validation
+            - Improper error handling leaking system info
+            - Race conditions in security-critical code
+            - Insecure random number generation (use crypto/rand)
+            - Missing HTTPS/TLS verification
+            
+            🟢 MEDIUM RISK:
+            - Insufficient rate limiting
+            - Missing security headers
+            - Verbose error messages
+            - Deprecated security functions
+            
+            FOCUS AREAS:
+            1. Authentication & Authorization
+            2. Input Validation & Sanitization
+            3. Cryptography usage
+            4. Secrets management
+            5. Error handling (no info leakage)
+            6. Database queries (SQL injection)
+            7. File operations (path traversal)
+            8. Network operations (TLS/HTTPS)
+            
+            OUTPUT:
+            - List all security issues by severity
+            - Provide secure code examples
+            - Reference OWASP guidelines where applicable
+            - Suggest security testing approaches
+            
+            Be thorough and assume adversarial users.

@@ -1,19 +1,34 @@
 # Golang Claude Test Project
 
-A simple Golang project to test GitHub integration with Claude Code.
+🎓 **An enterprise-grade learning project** demonstrating professional Claude Code integration with GitHub Actions.
+
+This project showcases best practices for AI-assisted code review in production environments, with custom prompts, security reviews, and comprehensive documentation.
+
+## 📚 Documentation
+
+- **[Enterprise Setup Guide](docs/ENTERPRISE_SETUP.md)** - Complete guide for production deployment
+- **[Coding Standards](/.github/CLAUDE_STANDARDS.md)** - Review criteria and best practices
+- **[Examples & Scenarios](docs/EXAMPLES.md)** - Real-world usage examples
+- **[Pull Request Template](/.github/PULL_REQUEST_TEMPLATE.md)** - Standardized PR format
 
 ## Project Structure
 
 ```
 golang-claude-test/
 ├── .github/
-│   └── workflows/
-│       ├── claude.yaml              # Claude AI assistant workflow
-│       └── claude-code-review.yaml  # Automated code review workflow
+│   ├── workflows/
+│   │   ├── claude.yaml              # Interactive AI assistant
+│   │   ├── claude-code-review.yaml  # Comprehensive PR review
+│   │   └── security-review.yaml     # Security-focused analysis
+│   ├── CLAUDE_STANDARDS.md          # Review standards & criteria
+│   ├── PULL_REQUEST_TEMPLATE.md     # PR template with checklist
+│   └── CODEOWNERS                   # Code ownership rules
+├── docs/
+│   ├── ENTERPRISE_SETUP.md          # Production deployment guide
+│   └── EXAMPLES.md                  # Usage examples & scenarios
 ├── main.go                          # Main application
 ├── main_test.go                     # Unit tests
 ├── go.mod                           # Go module file
-├── .gitignore                       # Git ignore rules
 └── README.md                        # This file
 ```
 
@@ -48,45 +63,74 @@ git branch -M main
 git push -u origin main
 ```
 
-## How the Integration Works
+## 🎯 Key Features
+
+### Enterprise-Grade Setup
+
+- ✅ **Custom Review Standards** - Tailored prompts for Go best practices
+- ✅ **Security-Focused** - Dedicated security review workflow
+- ✅ **Cost-Optimized** - Manual triggers only (~$40/month for 10-person team)
+- ✅ **Educational** - Detailed feedback with code examples
+- ✅ **Production-Ready** - CODEOWNERS, PR templates, comprehensive docs
 
 ### 💰 Cost-Effective Design
 
-**Important:** Both workflows are configured to trigger **only on demand** to prevent unexpected API costs. Claude will NOT automatically review every PR or commit.
+**Important:** All workflows are configured to trigger **only on demand** to prevent unexpected API costs. Claude will NOT automatically review every PR or commit.
 
-### Claude AI Assistant (`claude.yaml`)
+### 1. Claude AI Assistant (`claude.yaml`)
 
-**Trigger:** Only when you mention `@claude` in a comment
+**Trigger:** `@claude` mention in comments
 
-**Usage:**
-- Add a comment on an issue or PR mentioning `@claude`
-- Ask questions about the code
-- Request code changes or improvements
-- Get help with debugging
+**Best For:**
+- Quick questions and explanations
+- Targeted code reviews
+- Learning and mentorship
+- Debugging assistance
+
+**Custom Prompt Features:**
+- 🔴 Critical issues (security, races, leaks)
+- 🟡 High priority (tests, errors, docs)
+- 🟢 Medium priority (style, naming)
+- Educational feedback with examples
 
 **Example:**
-```
+```markdown
 @claude Can you review the error handling in main.go?
+@claude Explain how this caching mechanism works
+@claude Suggest unit tests for the multiply function
 ```
 
-### Claude Code Review (`claude-code-review.yaml`)
+### 2. Claude Code Review (`claude-code-review.yaml`)
 
 **Trigger Options:**
-1. **Manual workflow dispatch** (recommended for full reviews)
-2. **Comment trigger:** Type `/claude-review` in a PR comment
+1. Comment `/claude-review` in a PR
+2. Manual workflow dispatch (Actions tab)
 
-**Features:**
-- Reviews changed files in a PR
-- Provides suggestions for improvements
-- Identifies potential bugs or issues
-- Comments directly on the PR
+**Comprehensive Checklist:**
+- 🔒 Security (credentials, injection, validation)
+- ✅ Testing (coverage >= 80%, edge cases)
+- ⚠️ Error Handling (no ignored errors)
+- 📚 Documentation (godoc for exports)
+- ⚡ Performance (allocations, leaks)
+- 🏗️ Code Quality (SRP, DRY, complexity)
 
-**How to trigger manually:**
-1. Go to **Actions** tab in your GitHub repository
-2. Select **Claude Code Review** workflow
-3. Click **Run workflow**
-4. Enter the PR number
-5. Click **Run workflow** button
+**Output Format:**
+- Clear verdict (LGTM / Needs Work / Critical Issues)
+- Prioritized issue list
+- Code examples for fixes
+- Positive feedback on good practices
+
+### 3. Security Review (`security-review.yaml`)
+
+**Trigger:** Automatically on PRs touching `.go` files
+
+**Focus Areas:**
+- SQL/Command injection
+- Hardcoded secrets
+- Insecure cryptography
+- Authentication/authorization
+- Input validation
+- Error message info leakage
 
 ## Testing the Integration
 
@@ -175,11 +219,28 @@ Current time: 2026-06-14 12:57:00
 - Verify that the GitHub App has the necessary permissions
 - Check repository settings → Actions → General → Workflow permissions
 
-## Learn More
+## 🚀 Quick Start
 
+1. **Configure API Key** (see [Setup Instructions](#setup-instructions))
+2. **Create a test PR** with the `feature/test-claude` branch
+3. **Try the workflows:**
+   - Comment `@claude review this code`
+   - Comment `/claude-review` for full analysis
+4. **Read the feedback** and learn from suggestions
+5. **Explore documentation** for advanced usage
+
+## 📖 Learn More
+
+### Documentation
+- [Enterprise Setup Guide](docs/ENTERPRISE_SETUP.md) - Production deployment
+- [Examples & Scenarios](docs/EXAMPLES.md) - Real-world usage
+- [Coding Standards](/.github/CLAUDE_STANDARDS.md) - Review criteria
+
+### External Resources
 - [Claude API Documentation](https://docs.anthropic.com/)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Go Documentation](https://go.dev/doc/)
+- [Effective Go](https://go.dev/doc/effective_go)
+- [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md)
 
 ## Cost Management
 
@@ -199,9 +260,41 @@ Automatic triggers on every PR and commit can quickly consume API credits. This 
 
 *Costs vary based on Claude model used and conversation length*
 
-## Notes
+## 🎓 Learning Objectives
 
-- The workflows use `anthropics/claude-code-action@v1` - check for updates
-- API usage will consume Anthropic API credits
-- Review the workflow logs in the Actions tab for debugging
-- Consider setting up budget alerts in your Anthropic Console
+This project teaches:
+
+1. **AI-Assisted Code Review** - How to integrate Claude into your workflow
+2. **GitHub Actions** - Custom workflows and automation
+3. **Go Best Practices** - Security, testing, error handling
+4. **Enterprise Patterns** - CODEOWNERS, PR templates, documentation
+5. **Cost Management** - Optimizing AI usage for production
+
+## 🤝 Contributing
+
+This is a learning project. Feel free to:
+- Experiment with custom prompts
+- Add new workflows for different scenarios
+- Improve documentation
+- Share your learnings
+
+## 📝 Notes
+
+- Workflows use `anthropics/claude-code-action@v1` - check for updates
+- API usage consumes Anthropic API credits (~$40/month for active team)
+- Review workflow logs in Actions tab for debugging
+- Set up budget alerts in [Anthropic Console](https://console.anthropic.com/)
+- See [Enterprise Setup Guide](docs/ENTERPRISE_SETUP.md) for production tips
+
+## ⭐ What Makes This Enterprise-Grade?
+
+1. **Custom Prompts** - Tailored to Go best practices and security
+2. **Multiple Workflows** - Different review types for different needs
+3. **Cost Controls** - Manual triggers, size limits, business hours
+4. **Comprehensive Docs** - Standards, examples, troubleshooting
+5. **Team Processes** - CODEOWNERS, PR templates, checklists
+6. **Educational Focus** - Learn from detailed, constructive feedback
+
+---
+
+**Built with ❤️ as a learning resource for professional AI-assisted code review**
