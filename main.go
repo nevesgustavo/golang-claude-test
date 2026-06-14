@@ -31,3 +31,8 @@ func subtract(a, b int) int {
 func multiply(a, b int) int {
 	return a * b
 }
+
+// divide divides two numbers
+func divide(a, b int) int {
+	return a / b
+}
