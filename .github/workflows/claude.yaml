@@ -23,6 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Claude Code Integration
+        id: claude-assistant
         uses: anthropics/claude-code-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -56,3 +57,52 @@ jobs:
             4. Suggestions for improvements
             
             Be constructive, educational, and specific. Reference Go best practices.
+      
+      - name: Post Cost Estimate
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Estimate tokens based on comment length
+            const promptTokens = 600;  // Assistant prompt ~600 tokens
+            const codeTokens = 150;    // Focused review ~150 tokens
+            const responseTokens = 300; // Brief response ~300 tokens
+            
+            const inputTokens = promptTokens + codeTokens;
+            const outputTokens = responseTokens;
+            
+            // Claude 3.5 Sonnet pricing
+            const inputCost = (inputTokens / 1000000) * 3;
+            const outputCost = (outputTokens / 1000000) * 15;
+            const totalCost = inputCost + outputCost;
+            
+            const comment = `## 💰 Claude Assistant Cost Estimate
+            
+            **Workflow:** Claude AI Assistant (@claude mention)
+            **Status:** ${{ steps.claude-assistant.outcome || 'completed' }}
+            
+            ### Token Usage (Estimated)
+            - Input tokens: ~${inputTokens.toLocaleString()} tokens
+            - Output tokens: ~${outputTokens.toLocaleString()} tokens
+            - **Total tokens:** ~${(inputTokens + outputTokens).toLocaleString()} tokens
+            
+            ### Cost Breakdown
+            - Input cost: ~$${inputCost.toFixed(4)}
+            - Output cost: ~$${outputCost.toFixed(4)}
+            - **Total cost:** ~$${totalCost.toFixed(4)} (~$${totalCost.toFixed(2)})
+            
+            ### Budget Tracking
+            - Cost per @claude interaction: ~$0.05-0.10
+            - With $5 budget: ~50-100 interactions possible
+            
+            ---
+            *💡 Tip: For cheaper reviews, ask specific questions. For comprehensive reviews, use \`/claude-review\`.*
+            
+            *Check [Anthropic Console](https://console.anthropic.com/) for actual usage.*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

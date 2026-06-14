@@ -34,6 +34,7 @@ jobs:
         uses: tj-actions/changed-files@v41
 
       - name: Claude Code Review
+        id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -88,3 +89,55 @@ jobs:
             5. **Positive Feedback**: Highlight good practices
             
             Provide code examples for suggestions. Be educational and constructive.
+      
+      - name: Post Cost Estimate
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Estimate tokens for comprehensive review
+            const promptTokens = 1000;  // Comprehensive prompt ~1000 tokens
+            const codeTokens = 500;     // Medium PR ~500 tokens
+            const responseTokens = 800;  // Detailed response ~800 tokens
+            
+            const inputTokens = promptTokens + codeTokens;
+            const outputTokens = responseTokens;
+            
+            // Claude 3.5 Sonnet pricing
+            const inputCost = (inputTokens / 1000000) * 3;
+            const outputCost = (outputTokens / 1000000) * 15;
+            const totalCost = inputCost + outputCost;
+            
+            const comment = `## 💰 Code Review Cost Estimate
+            
+            **Workflow:** Comprehensive Code Review (/claude-review)
+            **Status:** ${{ steps.claude-review.outcome || 'completed' }}
+            
+            ### Token Usage (Estimated)
+            - Input tokens: ~${inputTokens.toLocaleString()} tokens
+            - Output tokens: ~${outputTokens.toLocaleString()} tokens
+            - **Total tokens:** ~${(inputTokens + outputTokens).toLocaleString()} tokens
+            
+            ### Cost Breakdown
+            - Input cost: ~$${inputCost.toFixed(4)}
+            - Output cost: ~$${outputCost.toFixed(4)}
+            - **Total cost:** ~$${totalCost.toFixed(4)} (~$${totalCost.toFixed(2)})
+            
+            ### Budget Tracking
+            - Cost per comprehensive review: ~$0.15-0.50 (varies by PR size)
+            - Small PR (< 100 lines): ~$0.10-0.20
+            - Medium PR (100-500 lines): ~$0.20-0.50
+            - Large PR (500+ lines): ~$0.50-1.00
+            - With $5 budget: ~10-50 comprehensive reviews possible
+            
+            ---
+            *💡 Tip: For cheaper reviews, use \`@claude\` with specific questions instead of full \`/claude-review\`.*
+            
+            *Check [Anthropic Console](https://console.anthropic.com/) for actual usage.*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

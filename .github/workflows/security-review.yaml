@@ -34,6 +34,7 @@ jobs:
           gosec -fmt=json -out=gosec-report.json ./... || true
 
       - name: Claude Security Review
+        id: claude-security
         uses: anthropics/claude-code-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -82,3 +83,52 @@ jobs:
             - Suggest security testing approaches
             
             Be thorough and assume adversarial users.
+      
+      - name: Post Cost Estimate
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Estimate tokens (rough calculation)
+            const promptTokens = 800;  // Security prompt is ~800 tokens
+            const codeTokens = 200;    // Small PR ~200 tokens
+            const responseTokens = 400; // Security response ~400 tokens
+            
+            const inputTokens = promptTokens + codeTokens;
+            const outputTokens = responseTokens;
+            
+            // Claude 3.5 Sonnet pricing (as of 2024)
+            const inputCost = (inputTokens / 1000000) * 3;   // $3 per 1M input tokens
+            const outputCost = (outputTokens / 1000000) * 15; // $15 per 1M output tokens
+            const totalCost = inputCost + outputCost;
+            
+            const comment = `## 💰 Security Review Cost Estimate
+            
+            **Workflow:** Security-Focused Review
+            **Status:** ${{ steps.claude-security.outcome || 'completed' }}
+            
+            ### Token Usage (Estimated)
+            - Input tokens: ~${inputTokens.toLocaleString()} tokens
+            - Output tokens: ~${outputTokens.toLocaleString()} tokens
+            - **Total tokens:** ~${(inputTokens + outputTokens).toLocaleString()} tokens
+            
+            ### Cost Breakdown
+            - Input cost: ~$${inputCost.toFixed(4)}
+            - Output cost: ~$${outputCost.toFixed(4)}
+            - **Total cost:** ~$${totalCost.toFixed(4)} (~$${totalCost.toFixed(2)})
+            
+            ### Budget Tracking
+            - Cost per security review: ~$0.01
+            - With $5 budget: ~500 security reviews possible
+            
+            ---
+            *Note: This is an estimate. Check [Anthropic Console](https://console.anthropic.com/) for actual usage.*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
